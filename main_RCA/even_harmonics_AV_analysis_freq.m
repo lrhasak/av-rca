@@ -3,7 +3,7 @@ function even_harmonics_AV_analysis_freq
   git_folder = '/Users/lrhasak/code/Git';
     addpath(genpath(fullfile(git_folder, 'rcaExtra')),'-end');
     addpath(genpath(fullfile(git_folder, 'rcaBase')),'-end');
-    addpath(genpath(fullfile(git_folder, 'mrC')),'-end');*
+    addpath(genpath(fullfile(git_folder, 'mrC')),'-end');
     addpath(genpath(fullfile(git_folder, 'svndl_code')),'-end');
     addpath(genpath(fullfile(git_folder, 'edNeuro-eeg-dev')),'-end');
     addpath(genpath('/Users/lrhasak/Volumes/Seagate Backup Plus Drive//Volumes/Seagate Backup Plus Drive/2022_AV_Final_Analysis/'))
@@ -27,6 +27,8 @@ function even_harmonics_AV_analysis_freq
     % matlab file. Lines 21-28 are generic and can be copy-pasted  
     % analysisStruct contains info about data location and data properties
     
+    % first pop up: where the data exports are located
+    % second pop up: where you would like to store the RCA results
     try
         analysisStruct = feval(['loadExperimentInfo_' experimentName]);
     catch err
@@ -88,21 +90,20 @@ function even_harmonics_AV_analysis_freq
     rcSettings.subjList = subjList;
         
     %copy settings template to 2hz analysis template 
-    runSettings_c2_nF1 = rcSettings;
+    runSettings_c1_nF1 = rcSettings;
     
     % use all bins
-    runSettings_c2_nF1.useBins = loadSettings_f1.useBins;
+    runSettings_c1_nF1.useBins = loadSettings_f1.useBins;
     
     % use 1F1-4F1
-    runSettings_c2_nF1.useFrequencies = {'2F1', '4F1','6F1', '8F1'};
+    runSettings_c1_nF1.useFrequencies = {'2F1', '4F1','6F1', '8F1'};
     % the name under which RCA result will be saved inyour output/RCA directory
     
-    runSettings_c2_nF1.label = 'Conditions_2_nF1';
-    runSettings_c2_nF1.computeStats = 0;
-    runSettings_c2_nF1.useCnds = 2;
-  
+    runSettings_c1_nF1.label = 'Conditions_1_nF1';
+    runSettings_c1_nF1.computeStats = 0; % change to 1 if you want stats
+    runSettings_c1_nF1.useCnds = 1:4; % change to individual or subset of conditions
 
-    rcResult_c2_nF1 = rcaExtra_runAnalysis(runSettings_c2_nF1, EEGData_f1, Noise1_f1, Noise2_f1);
+    rcResult_c1_nF1 = rcaExtra_runAnalysis(runSettings_c1_nF1, EEGData_f1, Noise1_f1, Noise2_f1);
     %% re-binning    
     % re-bin the data and run the analysis again using 1 bin in settings:
     nFreqs = length(loadSettings_f1.useFrequencies);
@@ -114,11 +115,11 @@ function even_harmonics_AV_analysis_freq
     noise_HI_f1_1bin = cellfun(@(x) rcaExtra_reshapeBinsToTrials(x, nFreqs),...
         Noise2_f1, 'UniformOutput', false);
     
-    runSettings_c2_nF1_1bin = runSettings_c2_nF1;
-    runSettings_c2_nF1_1bin.useBins = 1;
-    runSettings_c2_nF1_1bin.label = 'Condition_2_nF1_1bin';
+    runSettings_c1_nF1_1bin = runSettings_c1_nF1;
+    runSettings_c1_nF1_1bin.useBins = 1;
+    runSettings_c1_nF1_1bin.label = 'Condition_1_nF1_1bin';
 
-    rcResult_c2_nF1_1bin = rcaExtra_runAnalysis(runSettings_c2_nF1_1bin, EEGData_f1_1bin, noise_LO_f1_1bin, noise_HI_f1_1bin);
+    rcResult_c1_nF1_1bin = rcaExtra_runAnalysis(runSettings_c1_nF1_1bin, EEGData_f1_1bin, noise_LO_f1_1bin, noise_HI_f1_1bin);
     
     
     %%  Weight Flipping (match with xDiva waveform polarity)
@@ -129,16 +130,18 @@ function even_harmonics_AV_analysis_freq
     % Vector specifies both desired order and polarity: [-1 2 3 4 5 6]
     % To change order [-2 1 3 4 5 6]
     
-    % all bins
-    rcResult_c2_nF1_clean = rcaExtra_adjustRCWeights(rcResult_c2_nF1, [-1 -2 -3 4 5 6]);
+    % change polarity for first round RCA - all bins
+    rcResult_c1_nF1_flipped = rcaExtra_adjustRCWeights(rcResult_c1_nF1, [-1 2 3 -4 5 -6]);
    
-    % 1 bin 
+   
+    % change polarity for second round RCA - 1 bin 
    %rcResult_c2_nF1_1bin
-   rcResult_c2_nF1_1bin_flipped = rcaExtra_adjustRCWeights(rcResult_c2_nF1_1bin, [-1 -2 -3 4 5 6]);
+   rcResult_c1_nF1_1bin_flipped = rcaExtra_adjustRCWeights(rcResult_c1_nF1_1bin, [1 -2 -3 -4 5 -6]);
    
     
     
     %% Run RCA on merged conditions 
+    % new to LH - review this
     
 %     % merging two conditions (same, but add noise1, noise 2)
 %     data_nF1_clean_c12 = rcaExtra_mergeDatasetConditions(data_nF1, [1, 2]);
@@ -161,22 +164,22 @@ function even_harmonics_AV_analysis_freq
     colors_to_use = colorbrewer.qual.Set1{8};
         
     %% plotting all rcResult_c12_nF1_1bin
-    rcResult_c2_nF1_1bin.rcaSettings.computeStats = 0;
+    rcResult_c1_nF1_1bin.rcaSettings.computeStats = 1;
 
-    plot_c14_nF1_1bin = rcaExtra_initPlottingContainer(rcResult_c2_nF1_1bin);
-    plot_c14_nF1_1bin.conditionLabels = analysisStruct.info.conditionLabels;
-    plot_c14_nF1_1bin.rcsToPlot = 1;
-    plot_c14_nF1_1bin.cndsToPlot = 1:4;
-    plot_c14_nF1_1bin.conditionColors = colors_to_use./255;
+    plot_c1_nF1_1bin = rcaExtra_initPlottingContainer(rcResult_c1_nF1_1bin);
+    plot_c1_nF1_1bin.conditionLabels = analysisStruct.info.conditionLabels;
+    plot_c1_nF1_1bin.rcsToPlot = 1:2;
+    plot_c1_nF1_1bin.cndsToPlot = 1;
+    plot_c1_nF1_1bin.conditionColors = colors_to_use./255;
     
     % plots groups, each condition in separate window
      
-    rcaExtra_plotAmplitudes(plot_c14_nF1_1bin);
-    rcaExtra_plotLollipops(plot_c14_nF1_1bin);
-    rcaExtra_plotLatencies(plot_c14_nF1_1bin);
+    rcaExtra_plotAmplitudes(plot_c1_nF1_1bin);
+    rcaExtra_plotLollipops(plot_c1_nF1_1bin);
+    rcaExtra_plotLatencies(plot_c1_nF1_1bin);
 
     % split conditions, plot separately
-    [c1_rc, c2_rc, c3_rc, c4_rc]  = rcaExtra_splitPlotDataByCondition(plot_c14_nF1_1bin);
+    [c1_rc, c2_rc, c3_rc, c4_rc]  = rcaExtra_splitPlotDataByCondition(plot_c1_nF1_1bin);
     
     %%  plot separate conditions
     rcaExtra_plotAmplitudes(c1_rc, c2_rc, c3_rc, c4_rc);
@@ -184,10 +187,10 @@ function even_harmonics_AV_analysis_freq
     rcaExtra_plotLatencies(c1_rc, c2_rc, c3_rc, c4_rc);
     
     %% split rcResults
-    rc_1 = rcaExtra_selectConditionsSubset(rcResult_c2_nF1_1bin, 1);
-    rc_2 = rcaExtra_selectConditionsSubset(rcResult_c2_nF1_1bin, 2);    
-    rc_3 = rcaExtra_selectConditionsSubset(rcResult_c2_nF1_1bin, 1);
-    rc_4 = rcaExtra_selectConditionsSubset(rcResult_c2_nF1_1bin, 2);    
+    rc_1 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 1);
+    rc_2 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 2);    
+    rc_3 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 3);
+    rc_4 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 4);    
 
     %% Stats
     
