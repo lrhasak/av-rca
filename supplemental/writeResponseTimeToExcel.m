@@ -1,6 +1,6 @@
 % av_writeResponseTimeToExcel
 % ----------------------------
-% Lindsey - June 21, 2022
+% Lindsey + ChatGPT - January 12, 2023
 % April 2022 note from computeSaveResponseBins: files are now saved in
 % seagate/old/exports and they're written out with
 % responseBins in fnOut. So I'll need to run this again with the new data
@@ -29,22 +29,49 @@ end
 
 %% Write Out Sheet
 
-% load files and save out new Excel sheet file with concatenated responses
-for i = 1:10 %length(filelist)
+% initialize empty array to store response bins
+responseBinsData = {};
+
+for i = 1:length(filelist)
+    % print file number
     i
     % move into folder
     cd(filelist(i).folder);
+    
     % load file
     in = load(filelist(i).name);
-    currResponse(j) = in.R.responseBinSec(j); %this assumes always 2 responses
-    %T = table(pa
+    
+    % extract path of file
+    [fullPath, currentFolder, ext] = fileparts(filelist(i).folder);
+    
+    % extract parent file to get participant id
+    [parentPath, parentFolder, ~] = fileparts(fullPath);
+    participantID = extractAfter(parentFolder, '_');
+
+    % extract response
+    currResponse = in.R.responseBinSec;
+    
+    % extract condition and trial number from file name
+    [~, fileName, ~] = fileparts(filelist(i).name);
+    tokens = strsplit(fileName, '_');
+    condition = tokens{2};
+    trialNumber = tokens{3};
+    
+    % concatenate response, condition, and trial number in a cell array
+    currResponse = {participantID, currResponse, condition, trialNumber};
+    
+    % Append the current responses to the cell array
+    responseBinsData = [responseBinsData; currResponse];
 end
 
-%     fnOut = ['responseBins' filelist(i).name(4:end)];
-%     save(fnOut, 'R');
-%     clear in R fnOut;
-% %%end
+% make the table
+responseBinsData = cell2table(responseBinsData);
+responseBinsData.Properties.VariableNames = {'part_id', 'response', 'condition', 'trial'};
 
-% run RCA on response bins removed files
-% for every participant, trial, and condition - write out as table instead
-% of as file
+% write to excel
+writetable(responseBinsData,'concatenatedResponses.xlsx');
+
+
+
+
+
