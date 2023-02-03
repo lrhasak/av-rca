@@ -90,20 +90,22 @@ function even_harmonics_AV_analysis_freq
     rcSettings.subjList = subjList;
         
     %copy settings template to 2hz analysis template 
-    runSettings_c1_nF1 = rcSettings;
+    runSettings_c24710_nF2 = rcSettings;
     
     % use all bins
-    runSettings_c1_nF1.useBins = loadSettings_f1.useBins;
+    runSettings_c24710_nF2.useBins = loadSettings_f1.useBins;
     
     % use 1F1-4F1
-    runSettings_c1_nF1.useFrequencies = {'2F1', '4F1','6F1', '8F1'};
+    runSettings_c24710_nF2.useFrequencies = {'2F1', '4F1','6F1', '8F1'};
     % the name under which RCA result will be saved inyour output/RCA directory
     
-    runSettings_c1_nF1.label = 'Conditions_1_nF1';
-    runSettings_c1_nF1.computeStats = 0; % change to 1 if you want stats
-    runSettings_c1_nF1.useCnds = 1:4; % change to individual or subset of conditions
+    % MAKE SURE TO CHANGE THIS LINE
+    runSettings_c24710_nF2.label = 'Condition_c24710_nF';
+    runSettings_c24710_nF2.computeStats = 1; % change to 1 if you want stats
+    runSettings_c24710_nF2.useCnds = [2 4 7 10]; % change to individual or subset of conditions
 
-    rcResult_c1_nF1 = rcaExtra_runAnalysis(runSettings_c1_nF1, EEGData_f1, Noise1_f1, Noise2_f1);
+    % runRCA
+    rcResult_c24710_nF2 = rcaExtra_runAnalysis(runSettings_c24710_nF2, EEGData_f1, Noise1_f1, Noise2_f1);
     %% re-binning    
     % re-bin the data and run the analysis again using 1 bin in settings:
     nFreqs = length(loadSettings_f1.useFrequencies);
@@ -115,11 +117,11 @@ function even_harmonics_AV_analysis_freq
     noise_HI_f1_1bin = cellfun(@(x) rcaExtra_reshapeBinsToTrials(x, nFreqs),...
         Noise2_f1, 'UniformOutput', false);
     
-    runSettings_c1_nF1_1bin = runSettings_c1_nF1;
-    runSettings_c1_nF1_1bin.useBins = 1;
-    runSettings_c1_nF1_1bin.label = 'Condition_1_nF1_1bin';
+    runSettings_c24710_nF2_1bin = runSettings_c24710_nF2;
+    runSettings_c24710_nF2_1bin.useBins = 1;
+    runSettings_c24710_nF2_1bin.label = 'Conditions_c24710_nF2_1bin';
 
-    rcResult_c1_nF1_1bin = rcaExtra_runAnalysis(runSettings_c1_nF1_1bin, EEGData_f1_1bin, noise_LO_f1_1bin, noise_HI_f1_1bin);
+    rcResult_c24710_nF2_1bin = rcaExtra_runAnalysis(runSettings_c24710_nF2_1bin, EEGData_f1_1bin, noise_LO_f1_1bin, noise_HI_f1_1bin);
     
     
     %%  Weight Flipping (match with xDiva waveform polarity)
@@ -131,12 +133,12 @@ function even_harmonics_AV_analysis_freq
     % To change order [-2 1 3 4 5 6]
     
     % change polarity for first round RCA - all bins
-    rcResult_c1_nF1_flipped = rcaExtra_adjustRCWeights(rcResult_c1_nF1, [-1 2 3 -4 5 -6]);
+    rcResult_c24710_nF2_flipped = rcaExtra_adjustRCWeights(rcResult_c24710_nF1, [-1 -2 3 -4 5 -6]);
    
    
     % change polarity for second round RCA - 1 bin 
    %rcResult_c2_nF1_1bin
-   rcResult_c1_nF1_1bin_flipped = rcaExtra_adjustRCWeights(rcResult_c1_nF1_1bin, [1 -2 -3 -4 5 -6]);
+   rcResult_c24710_nF2_1bin_flipped = rcaExtra_adjustRCWeights(rcResult_c24710_nF2_1bin, [-1 -2 -3 -4 5 6]);
    
     
     
@@ -164,40 +166,58 @@ function even_harmonics_AV_analysis_freq
     colors_to_use = colorbrewer.qual.Set1{8};
         
     %% plotting all rcResult_c12_nF1_1bin
-    rcResult_c1_nF1_1bin.rcaSettings.computeStats = 1;
+    rcResult_c24710_nF2_1bin.rcaSettings.computeStats = 1;
 
-    plot_c1_nF1_1bin = rcaExtra_initPlottingContainer(rcResult_c1_nF1_1bin);
-    plot_c1_nF1_1bin.conditionLabels = analysisStruct.info.conditionLabels;
-    plot_c1_nF1_1bin.rcsToPlot = 1:2;
-    plot_c1_nF1_1bin.cndsToPlot = 1;
-    plot_c1_nF1_1bin.conditionColors = colors_to_use./255;
+    plot_c24710_nF2_1bin = rcaExtra_initPlottingContainer(rcResult_c24710_nF2_1bin);
+    plot_c24710_nF2_1bin.conditionLabels = analysisStruct.info.conditionLabels;
+    plot_c24710_nF2_1bin.rcsToPlot = 1:5;
+    % i probably should change this line instead of alexandra's function
+        %cndIdx = find(groups{ni}.cndsToPlot == np);
+   
+    plot_c24710_nF2_1bin.cndsToPlot =  arrayfun(@(x)...
+                                        find(rcResult_c24710_nF2_1bin_flipped.rcaSettings.useCnds...
+                                        == x), rcResult_c24710_nF2_1bin_flipped.rcaSettings.useCnds);
+        
+  %  plot_c24710_nF1_1bin.cndsToPlot = rcResult_c24710_nF1_1bin_flipped.rcaSettings.useCnds;
+    plot_c24710_nF2_1bin.conditionColors = colors_to_use./255;
     
     % plots groups, each condition in separate window
      
-    rcaExtra_plotAmplitudes(plot_c1_nF1_1bin);
-    rcaExtra_plotLollipops(plot_c1_nF1_1bin);
-    rcaExtra_plotLatencies(plot_c1_nF1_1bin);
+    rcaExtra_plotAmplitudes(plot_c24710_nF2_1bin);
+    rcaExtra_plotLollipops(plot_c24710_nF2_1bin);
+    rcaExtra_plotLatencies(plot_c24710_nF2_1bin);
 
     % split conditions, plot separately
-    [c1_rc, c2_rc, c3_rc, c4_rc]  = rcaExtra_splitPlotDataByCondition(plot_c1_nF1_1bin);
+    [c2_rc, c4_rc, c7_rc, c10_rc]  = rcaExtra_splitPlotDataByCondition(plot_c24710_nF2_1bin);
     
     %%  plot separate conditions
-    rcaExtra_plotAmplitudes(c1_rc, c2_rc, c3_rc, c4_rc);
-    rcaExtra_plotLollipops(c1_rc, c2_rc, c3_rc, c4_rc);
-    rcaExtra_plotLatencies(c1_rc, c2_rc, c3_rc, c4_rc);
+    rcaExtra_plotAmplitudes(c2_rc, c4_rc, c7_rc, c10_rc);
+    validHandles = ishandle(figureHandles);
+if any(~validHandles)
+    warning('Invalid handles in figureHandles array')
+    return
+end
+otherScript(figureHandles);
+    rcaExtra_plotLollipops(c2_rc, c4_rc, c7_rc, c10_rc);
+    rcaExtra_plotLatencies(c2_rc, c4_rc, c7_rc, c10_rc);
     
     %% split rcResults
-    rc_1 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 1);
-    rc_2 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 2);    
-    rc_3 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 3);
-    rc_4 = rcaExtra_selectConditionsSubset(rcResult_c1_nF1_1bin, 4);    
+    rc_1 = rcaExtra_selectConditionsSubset(rcResult_c24710_nF2_1bin, 1);
+    rc_2 = rcaExtra_selectConditionsSubset(rcResult_c24710_nF2_1bin, 2);    
+    rc_3 = rcaExtra_selectConditionsSubset(rcResult_c24710_nF2_1bin, 3);
+    rc_4 = rcaExtra_selectConditionsSubset(rcResult_c24710_nF2_1bin, 4);    
 
     %% Stats
     
-    rcaExtra_plotAmplitudeWithStats(c1_rc, c2_rc, rc_1, rc_2)
+   % rcaExtra_plotAmplitudeWithStats(c1_rc, c2_rc, rc_1, rc_2
+     rcaExtra_plotAmplitudeWithStats(c2_rc, [], rc_1, [])
+
     % let's add stats computing 
     c12_stats = rcaExtra_runStatsAnalysis(rc_1, rc_2, 1);
     
     % specify plotting
          
 end
+
+% fang is reconstructing longer epochs and plotting fft 
+% might just show what i'm trying to get at 
