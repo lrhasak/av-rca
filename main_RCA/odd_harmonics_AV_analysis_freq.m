@@ -99,12 +99,12 @@ function odd_harmonics_AV_analysis_freq
     runSettings__nF1.useFrequencies = {'1F1', '3F1', '5F1','7F1','9F1'};
     % the name under which RCA result will be saved inyour output/RCA directory
     
-    runSettings__nF1.label = 'all_conditions_nF1';
+    runSettings__nF1.label = 'c24_nF1';
     runSettings__nF1.computeStats = 1;
-    runSettings__nF1.useCnds = 4;
+    runSettings__nF1.useCnds = [2, 4];
   
 
-    rcResult_c4_nF1 = rcaExtra_runAnalysis(runSettings__nF1, EEGData_f1, Noise1_f1, Noise2_f1);
+    rcResult_c24_nF1 = rcaExtra_runAnalysis(runSettings__nF1, EEGData_f1, Noise1_f1, Noise2_f1);
     %% re-binning    
     % re-bin the data and run the analysis again using 1 bin in settings:
     nFreqs = length(loadSettings_f1.useFrequencies);
@@ -118,9 +118,9 @@ function odd_harmonics_AV_analysis_freq
     
     runSettings__nF1_1bin = runSettings__nF1;
     runSettings__nF1_1bin.useBins = 1;
-    runSettings__nF1_1bin.label = 'Condition$_nF1_1bin';
+    runSettings__nF1_1bin.label = 'Condition%c_nF1_1bin';
 
-    rcResult_c4_nF1_1bin = rcaExtra_runAnalysis(runSettings__nF1_1bin, EEGData_f1_1bin, noise_LO_f1_1bin, noise_HI_f1_1bin);
+    rcResult_c24_nF1_1bin = rcaExtra_runAnalysis(runSettings__nF1_1bin, EEGData_f1_1bin, noise_LO_f1_1bin, noise_HI_f1_1bin);
     
     
     %%  Weight Flipping (match with xDiva waveform polarity)
@@ -132,11 +132,11 @@ function odd_harmonics_AV_analysis_freq
     % To change order [-2 1 3 4 5 6]
     
     % all bins
-    rcResult_nF1_clean = rcaExtra_adjustRCWeights(rcResult__nF1, [-1 -2 -3 4 5 6]);
+    rcResult_c24_nF1_clean = rcaExtra_adjustRCWeights(rcResult_c24_nF1, [-1 2 -3 -4 -5 -6]);
    
     % 1 bin 
    %rcResult_c2_nF1_1bin
-   rcResult_nF1_1bin_flipped = rcaExtra_adjustRCWeights(rcResult_c4_nF1_1bin, [-1 -2 3 4 -5 -6]);
+   rcResult_c24_nF1_1bin_flipped = rcaExtra_adjustRCWeights(rcResult_c24_nF1_1bin, [-1 -2 -3 4 5 6]);
    
     
     
@@ -160,15 +160,17 @@ function odd_harmonics_AV_analysis_freq
     % package with colors, make sure to have enough for each condition
     load('colorbrewer');
     % Rows = colors, columns = RGB values in 1-255 range (need to be normalized by /255) 
-    colors_to_use = colorbrewer.qual.Set3{11};
+    colors_to_use = colorbrewer.qual.Paired{6};
         
     %% plotting all rcResult_nF1_1bin
-    rcResult_c4_nF1_1bin.rcaSettings.computeStats = 1;
+    rcResult_c24_nF1_1bin.rcaSettings.computeStats = 1;
 
-    plot_nF1_1bin = rcaExtra_initPlottingContainer(rcResult_c4_nF1_1bin);
+    plot_nF1_1bin = rcaExtra_initPlottingContainer(rcResult_c24_nF1_1bin_flipped);
     plot_nF1_1bin.conditionLabels = analysisStruct.info.conditionLabels;
     plot_nF1_1bin.rcsToPlot = 1:4;
-    plot_nF1_1bin.cndsToPlot = 2:4;
+    plot_nF1_1bin.cndsToPlot = arrayfun(@(x)...
+                                        find(rcResult_c24_nF1_1bin_flipped.rcaSettings.useCnds...
+                                        == x), rcResult_c24_nF1_1bin_flipped.rcaSettings.useCnds);
     plot_nF1_1bin.conditionColors = colors_to_use./255;
     
     % plots groups, each condition in separate window
@@ -180,13 +182,13 @@ function odd_harmonics_AV_analysis_freq
     rcaExtra_plotLatencies(plot_nF1_1bin);
 
     % split conditions, plot separately
-    [c1_rc, c2_rc, c3_rc, c4_rc, c5_rc, c6_rc, c7_rc, c8_rc, c9_rc, c10_rc, c_11_rc]  = rcaExtra_splitPlotDataByCondition(plot_nF1_1bin);
-    
+  %  [c1_rc, c2_rc, c3_rc, c4_rc, c5_rc, c6_rc, c7_rc, c8_rc, c9_rc, c10_rc, c_11_rc]  = rcaExtra_splitPlotDataByCondition(plot_nF1_1bin);
+    [c2, c4]  = rcaExtra_splitPlotDataByCondition(plot_nF1_1bin);
     %%  plot separate conditions
     % this is actually plotting different conditions together!  
-    rcaExtra_plotAmplitudes(c1_rc, c2_rc, c3_rc, c4_rc);
-    rcaExtra_plotLollipops(c1_rc, c2_rc, c3_rc, c4_rc);
-    rcaExtra_plotLatencies(c1_rc, c2_rc, c3_rc, c4_rc);
+    rcaExtra_plotAmplitudes(c2, c4);
+    rcaExtra_plotLollipops(c2, c4);
+    rcaExtra_plotLatencies(c2, c4);
     
     
     % let's do 2, 7, 10, and 2/4
@@ -195,17 +197,19 @@ function odd_harmonics_AV_analysis_freq
     rcaExtra_plotLollipops(c1_rc, c2_rc, c3_rc, c4_rc);
     rcaExtra_plotLatencies(c2_rc, c7_rc, c10_rc);
     %% split rcResults
-    rc_1 = rcaExtra_selectConditionsSubset(rcResult_c4_nF1_1bin, 1);
-    rc_2 = rcaExtra_selectConditionsSubset(rcResult_c4_nF1_1bin, 2);    
-    rc_3 = rcaExtra_selectConditionsSubset(rcResult_c4_nF1_1bin, 1);
-    rc_4 = rcaExtra_selectConditionsSubset(rcResult_c4_nF1_1bin, 2);    
+    rc_1 = rcaExtra_selectConditionsSubset(rcResult_c24_nF1_1bin_flipped, 1);
+    rc_2 = rcaExtra_selectConditionsSubset(rcResult_c24_nF1_1bin_flipped, 2);    
+    rc_3 = rcaExtra_selectConditionsSubset(rcResult_c24_nF1_1bin, 1);
+    rc_4 = rcaExtra_selectConditionsSubset(rcResult_c24_nF1_1bin, 2);    
 
     %% Stats
     
-    rcaExtra_plotAmplitudeWithStats(c1_rc, c2_rc, rc_1, rc_2)
+    rcaExtra_plotAmplitudeWithStats(c2, c4, rc_1, rc_2)
     % let's add stats computing 
-    c12_stats = rcaExtra_runStatsAnalysis(rc_1, rc_2, 1);
+    c24_stats = rcaExtra_runStatsAnalysis(rc_1, rc_2, 1);
     
     % specify plotting
-         
+    %% Compare Topo Maps?
+    rcaExtra_compareTopoMaps(rcResult_c24_nF1_1bin_flipped.A);
+
 end
