@@ -99,9 +99,12 @@ function all_harmonics_AV_analysis_freq
     runSettings__nF1.useFrequencies = {'1F1', '2F1', '3F1', '4F1', '5F1', '6F1', '7F1','8F1', '9F1'};
     % the name under which RCA result will be saved inyour output/RCA directory
     
-    runSettings__nF1.label = 'allconds_all_hz';
-    runSettings__nF1.computeStats = 1;
-    runSettings__nF1.useCnds = 1:11;
+    % condition label
+    runSettings__nF1.label = 'cond2_all_hz';
+    runSettings__nF1.computeStats = 1; %0 is no stats; 1 is yes
+    
+    % compute RCA on which conditions?
+    runSettings__nF1.useCnds = 1:2; %1:11
   
 
     rcResult_all_conds_nF1 = rcaExtra_runAnalysis(runSettings__nF1, EEGData_f1, Noise1_f1, Noise2_f1);
@@ -141,6 +144,7 @@ function all_harmonics_AV_analysis_freq
     
     
     %% Run RCA on merged conditions 
+    % ask Fang or Blair what this does!
     
 %     % merging two conditions (same, but add noise1, noise 2)
 %     data_nF1_clean_c12 = rcaExtra_mergeDatasetConditions(data_nF1, [1, 2]);
@@ -168,12 +172,12 @@ function all_harmonics_AV_analysis_freq
     plot_nF1_1bin = rcaExtra_initPlottingContainer(rcResult_nF1_1bin);
     plot_nF1_1bin.conditionLabels = analysisStruct.info.conditionLabels;
     plot_nF1_1bin.rcsToPlot = 1:4;
-    plot_nF1_1bin.cndsToPlot = 1:11;
+    plot_nF1_1bin.cndsToPlot = 2;
     plot_nF1_1bin.conditionColors = colors_to_use./255;
     
-    % plots groups, each condition in separate window
+    % plots groups, each condition 
+    % amps are currently pretty uselessin separate window
     
-    % amps are currently pretty useless
     rcaExtra_plotAmplitudes(plot_nF1_1bin);
     rcaExtra_plotLollipops(plot_nF1_1bin);
     % error happening with plotLatencies (mismatch in axes?)
