@@ -10,21 +10,33 @@
 clear all; close all; clc
 
 % navigate to directory where responseBin .mat files are saved
-mainDir = '/Volumes/Seagate Backup Plus Drive/2020_Studies/2020_AV_RCA/Old/Exports_no21/';
+mainDir = '/Volumes/Seagate Backup Plus Drive/2022_AV_Final_Analysis/combined/';
 
-% find all files
-filelist = dir(fullfile(mainDir, '**/responseBins*.mat'));
+% % find all files - only doing it like this because of the way the folders
+% % are structured
+% filelist_control = dir(fullfile(mainDir, '**/**/responseBins*.mat'));
+% filelist_dys = dir(fullfile(mainDir, '**/**/responseBins*.mat'));
+% 
+% % concatenate
+% filelist = cat(1, filelist_control, filelist_dys);
 
 %% Find participants
 % create participant list 
-participantIDPrefix = "ENI";
+% participantIDPrefix = "*";
+ participantIDPrefix = {'nl', 'ENI'};
+
 
 participantDataArray = [];
 
 % gets all participants in directory whose folder names start with prefix
 if exist("participantIDPrefix")
-    participantFolders = dir(mainDir + participantIDPrefix + "*"); 
-    participantIDs = string({participantFolders.name}); 
+    participantFolders_control = dir(mainDir + participantIDPrefix + "*"); 
+    participantFolders_dys = dir(mainDir + participantIDPrefix + "*"); 
+    
+% concatenate the participant folders from both directories
+    participantFolders = cat(1, participantFolders_control, participantFolders_dys);
+    
+    participantIDs = string({participantFolders.name})'; 
 end
 
 %% Write Out Sheet
@@ -69,7 +81,7 @@ responseBinsData = cell2table(responseBinsData);
 responseBinsData.Properties.VariableNames = {'part_id', 'response', 'condition', 'trial'};
 
 % write to excel
-writetable(responseBinsData,'concatenatedResponses.xlsx');
+writetable(responseBinsData,'avWord_concatenatedResponses.xlsx');
 
 
 
